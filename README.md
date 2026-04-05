@@ -51,3 +51,29 @@ To spin up the entire pipeline (Kafka, Database, CV Service, and UI):
 
 ```bash
 docker-compose up --build
+```
+This will start all services and the Streamlit dashboard will be accessible at `http://localhost:8501`.
+### Local Development
+1. **CV Inference Service**:
+   * Navigate to the `cv_service` directory.
+   * Install dependencies: `pip install -r requirements.txt`
+   * Run the service: `python app.py`
+2. **Streamlit Dashboard**:
+    * Navigate to the `ui` directory.
+    * Install dependencies: `pip install -r requirements.txt`
+    * Run the dashboard: `streamlit run dashboard.py`
+3. **Kafka & Database**:
+    * Use Docker Compose to start Kafka and PostgreSQL: `docker-compose up kafka db`
+---
+## 📊 Metrics & Evaluation
+* **Utilization Rate**: Percentage of time the machine is classified as "Active" over a given period.
+* **Activity Breakdown**: Time spent in each activity (Digging, Swinging, etc.).
+* **Accuracy**: Evaluated using a labeled dataset of construction footage, comparing predicted states/activities against ground truth annotations.
+* **Latency**: Time taken from frame capture to activity classification, aiming for sub-second performance.
+---
+## 🛠️ Future Enhancements
+* **Edge Deployment**: Optimize the CV model for edge devices (e.g., NVIDIA Jetson) to reduce latency and bandwidth usage.
+* **Multi-Camera Fusion**: Integrate data from multiple camera angles for improved accuracy in activity classification.
+* **Predictive Analytics**: Use historical utilization data to predict maintenance needs or optimize scheduling.
+* **Integration with BIM**: Link real-time equipment data with Building Information Modeling (BIM) systems for enhanced project management.
+---
