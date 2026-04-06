@@ -54,6 +54,20 @@ services:
     #           count: 1
     #           capabilities: [gpu]
 
+  # --- MICROSERVICE: MAIN APP ---
+  app:
+    build: ./app
+    depends_on:
+      - kafka
+      - timescaledb
+    ports:
+      - "5000:5000"
+    environment:
+      - KAFKA_BROKER=kafka:9092
+      - DB_URL=postgresql://admin:password123@timescaledb:5432/equipment_stats
+    volumes:
+      - ./app:/app
+
   # --- MICROSERVICE: UI & ANALYTICS DASHBOARD ---
   dashboard_ui:
     build: ./ui

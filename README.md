@@ -79,7 +79,7 @@ This payload includes:
 To spin up the entire pipeline (Kafka, Database, CV Service, and UI):
 
 ```bash
-docker-compose -f docker-composer.yml up --build
+docker-compose up --build
 ```
 This will start all services and the Streamlit dashboard will be accessible at `http://localhost:8501`.
 ### Local Development
@@ -92,7 +92,7 @@ This will start all services and the Streamlit dashboard will be accessible at `
     * Install dependencies: `pip install -r requirements.txt`
     * Run the dashboard: `streamlit run dashboard.py`
 3. **Kafka & Database**:
-    * Use Docker Compose to start Kafka and PostgreSQL: `docker-compose -f docker-composer.yml up kafka db`
+    * Use Docker Compose to start Kafka and PostgreSQL: `docker-compose up kafka db`
 ---
 ## 📊 Metrics & Evaluation
 * **Utilization Rate**: Percentage of time the machine is classified as "Active" over a given period.
