@@ -1,6 +1,6 @@
-# Equipment Utilization & Activity Classification Prototype
+# Technical Assessment: Equipment Utilization & Activity Classification Prototype
 
- This project is a real-time, microservices-based computer vision pipeline designed to track construction equipment utilization. It distinguishes between **ACTIVE** and **INACTIVE** states, classifies specific work activities, and calculates efficiency metrics using a distributed architecture.
+This project is a real-time, microservices-based computer vision pipeline designed to track construction equipment utilization. It distinguishes between **ACTIVE** and **INACTIVE** states, classifies specific work activities, and calculates efficiency metrics using a distributed architecture.
 
 ---
 
@@ -39,6 +39,35 @@ Specific activities (Digging, Swinging, etc.) are classified using a **State Mac
 
 ---
 
+## 📡 Expected Kafka Payload Format
+
+The CV microservice outputs a JSON payload to Kafka to support state, activity, and time analysis. An example payload is as follows:
+
+```json
+{
+  "timestamp": "2023-10-01T12:00:00Z",
+  "equipment_id": "excavator_1",
+  "state": "ACTIVE",
+  "activity": "Digging",
+  "confidence": 0.95,
+  "utilization_percentage": 75.5,
+  "total_active_time": 4500,
+  "total_idle_time": 1500
+}
+```
+
+This payload includes:
+- `timestamp`: ISO 8601 formatted timestamp of the analysis.
+- `equipment_id`: Unique identifier for the detected equipment.
+- `state`: Current state ("ACTIVE" or "INACTIVE").
+- `activity`: Classified activity ("Digging", "Swinging/Loading", "Dumping", "Waiting").
+- `confidence`: Confidence score for the classification (0-1).
+- `utilization_percentage`: Overall utilization percentage.
+- `total_active_time`: Cumulative active time in seconds.
+- `total_idle_time`: Cumulative idle time in seconds.
+
+---
+
 ## 🚀 Setup Instructions
 
 ### Prerequisites
@@ -50,7 +79,7 @@ Specific activities (Digging, Swinging, etc.) are classified using a **State Mac
 To spin up the entire pipeline (Kafka, Database, CV Service, and UI):
 
 ```bash
-docker-compose up --build
+docker-compose -f docker-composer.yml up --build
 ```
 This will start all services and the Streamlit dashboard will be accessible at `http://localhost:8501`.
 ### Local Development
@@ -63,7 +92,7 @@ This will start all services and the Streamlit dashboard will be accessible at `
     * Install dependencies: `pip install -r requirements.txt`
     * Run the dashboard: `streamlit run dashboard.py`
 3. **Kafka & Database**:
-    * Use Docker Compose to start Kafka and PostgreSQL: `docker-compose up kafka db`
+    * Use Docker Compose to start Kafka and PostgreSQL: `docker-compose -f docker-composer.yml up kafka db`
 ---
 ## 📊 Metrics & Evaluation
 * **Utilization Rate**: Percentage of time the machine is classified as "Active" over a given period.
@@ -71,6 +100,20 @@ This will start all services and the Streamlit dashboard will be accessible at `
 * **Accuracy**: Evaluated using a labeled dataset of construction footage, comparing predicted states/activities against ground truth annotations.
 * **Latency**: Time taken from frame capture to activity classification, aiming for sub-second performance.
 ---
+## 🎥 Demo Video/GIF
+
+A visual demonstration of the working solution is available in the `demo/` directory:
+- `demo_video.mp4`: Full demo showing real-time processing of construction equipment video.
+- `demo.gif`: Animated GIF highlighting key features (bounding boxes, status updates, utilization dashboard).
+
+The demo illustrates:
+- Live video feed with equipment detection and bounding boxes.
+- Real-time ACTIVE/INACTIVE status updates.
+- Activity classification transitions.
+- Utilization percentage calculations updating in real-time.
+
+---
+
 ## 🛠️ Future Enhancements
 * **Edge Deployment**: Optimize the CV model for edge devices (e.g., NVIDIA Jetson) to reduce latency and bandwidth usage.
 * **Multi-Camera Fusion**: Integrate data from multiple camera angles for improved accuracy in activity classification.
