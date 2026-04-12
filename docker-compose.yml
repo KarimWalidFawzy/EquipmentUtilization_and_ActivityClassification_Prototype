@@ -74,11 +74,11 @@ services:
     depends_on:
       - kafka
       - timescaledb
+      - app
     ports:
       - "8501:8501"
     environment:
-      - KAFKA_BROKER=kafka:9092
-      - DB_URL=postgresql://admin:password123@timescaledb:5432/equipment_stats
+      - BACKEND_URL=http://app:5000
     volumes:
       - ./ui:/app
 

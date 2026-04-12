@@ -86,11 +86,12 @@ This will start all services and the Streamlit dashboard will be accessible at `
 1. **CV Inference Service**:
    * Navigate to the `cv_service` directory.
    * Install dependencies: `pip install -r requirements.txt`
-   * Run the service: `python app.py`
+   * Run the service: `python cv_service.py`
+   * If `./videos/construction_video.mp4` is not available, the service automatically falls back to a synthetic sample feed.
 2. **Streamlit Dashboard**:
     * Navigate to the `ui` directory.
     * Install dependencies: `pip install -r requirements.txt`
-    * Run the dashboard: `streamlit run dashboard.py`
+    * Run the dashboard: `streamlit run ui.py`
 3. **Kafka & Database**:
     * Use Docker Compose to start Kafka and PostgreSQL: `docker-compose up kafka db`
 ---
