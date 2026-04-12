@@ -15,6 +15,14 @@ KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "equipment_status")
 EQUIPMENT_ID = os.getenv("EQUIPMENT_ID", "excavator_1")
 FRAME_RATE = float(os.getenv("FRAME_RATE", "2.0"))
 
+# Check for video links file
+video_links_file = os.path.join(os.path.dirname(__file__), '..', 'videos', 'video_links.txt')
+if os.path.exists(video_links_file):
+    with open(video_links_file, 'r') as f:
+        lines = [line.strip() for line in f if line.strip()]
+        if lines:
+            VIDEO_SOURCE = lines[0]  # Use the first URL
+
 ACTIVE_THRESHOLD = 0.005
 HIGH_ACTIVITY_THRESHOLD = 0.04
 
@@ -35,11 +43,10 @@ def create_producer():
 
 
 def open_video_source():
-    if os.path.exists(VIDEO_SOURCE):
-        cap = cv2.VideoCapture(VIDEO_SOURCE)
-        if cap.isOpened():
-            print(f"Using video source: {VIDEO_SOURCE}")
-            return cap, False
+    cap = cv2.VideoCapture(VIDEO_SOURCE)
+    if cap.isOpened():
+        print(f"Using video source: {VIDEO_SOURCE}")
+        return cap, False
 
     cap = cv2.VideoCapture(0)
     if cap.isOpened():
