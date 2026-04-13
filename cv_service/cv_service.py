@@ -8,6 +8,9 @@ import cv2
 import numpy as np
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
+import pandas as pd
+import requests
+from pytube import YouTube
 
 VIDEO_SOURCE = os.getenv("VIDEO_SOURCE", "/app/data/construction_video.mp4")
 KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
@@ -15,13 +18,25 @@ KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "equipment_status")
 EQUIPMENT_ID = os.getenv("EQUIPMENT_ID", "excavator_1")
 FRAME_RATE = float(os.getenv("FRAME_RATE", "2.0"))
 
+def download_video(url, output_path):
+    if 'youtube.com' in url or 'youtu.be' in url:
+        yt = YouTube(url)
+        stream = yt.streams.filter(progressive=True, file_extension='mp4').first()
+        stream.download(output_path=output_path, filename='video.mp4')
+        return os.path.join(output_path, 'video.mp4')
+    else:
+        response = requests.get(url, stream=True)
+        with open(os.path.join(output_path, 'video.mp4'), 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+        return os.path.join(output_path, 'video.mp4')
+
 # Check for video links file
-video_links_file = os.path.join(os.path.dirname(__file__), '..', 'videos', 'video_links.txt')
+video_links_file = os.path.join(os.path.dirname(__file__), '..', 'videos', 'video_links.csv')
 if os.path.exists(video_links_file):
-    with open(video_links_file, 'r') as f:
-        lines = [line.strip() for line in f if line.strip()]
-        if lines:
-            VIDEO_SOURCE = lines[0]  # Use the first URL
+    df = pd.read_csv(video_links_file)
+    if not df.empty:
+        VIDEO_SOURCE = df['Link'].iloc[0]  # Use the first URL
 
 ACTIVE_THRESHOLD = 0.005
 HIGH_ACTIVITY_THRESHOLD = 0.04
@@ -43,7 +58,15 @@ def create_producer():
 
 
 def open_video_source():
-    cap = cv2.VideoCapture(VIDEO_SOURCE)
+    if VIDEO_SOURCE.startswith('http'):
+        # Download video
+        data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
+        os.makedirs(data_dir, exist_ok=True)
+        video_path = download_video(VIDEO_SOURCE, data_dir)
+        cap = cv2.VideoCapture(video_path)
+    else:
+        cap = cv2.VideoCapture(VIDEO_SOURCE)
+    
     if cap.isOpened():
         print(f"Using video source: {VIDEO_SOURCE}")
         return cap, False

@@ -1,6 +1,6 @@
 # Technical Assessment: Equipment Utilization & Activity Classification Prototype
 
-This project is a real-time, microservices-based computer vision pipeline designed to track construction equipment utilization. It distinguishes between **ACTIVE** and **INACTIVE** states, classifies specific work activities, and calculates efficiency metrics using a distributed architecture.
+This project is a real-time, microservices-based computer vision pipeline designed to track construction equipment utilization. It distinguishes between **ACTIVE** and **INACTIVE** states, classifies specific work activities, and calculates efficiency metrics using a distributed architecture. The system now includes deep learning model training using videos extracted from online sources.
 
 ---
 
@@ -9,9 +9,10 @@ This project is a real-time, microservices-based computer vision pipeline design
 The system is designed for scalability using a decoupled microservices approach:
 
 1.  **CV Inference Service**: 
-    * **Detection & Tracking**: Uses YOLOv8/v10 for equipment localization.
-    * **Motion Analysis**: Implements region-based motion detection to identify "Active" states even when the machine's base is stationary.
-    * **Activity Classifier**: A temporal analysis module to identify Digging, Swinging, Loading, and Dumping.
+    * **Video Source**: Reads video links from `videos/video_links.csv` and downloads videos from online sources (YouTube, Pexels, etc.).
+    * **Motion Analysis**: Implements background subtraction for motion detection to identify "Active" states.
+    * **Activity Classifier**: Classifies activities based on motion thresholds (Digging, Loading, Waiting).
+    * **Deep Learning Training**: A separate training script extracts frames from downloaded videos and trains a CNN-LSTM model for activity classification.
 2.  **Message Broker (Apache Kafka)**: 
     * Streams real-time JSON payloads from the CV engine to the backend and UI.
 3.  **Data Sink**: 
@@ -23,19 +24,22 @@ The system is designed for scalability using a decoupled microservices approach:
 
 ## 🧠 Technical Write-up & Design Decisions
 
-### 1. The Articulated Equipment Challenge
-**Problem**: Standard bounding box tracking often marks an excavator as "Inactive" if the tracks aren't moving, even if the arm is digging.
+### 1. Video Data Extraction
+**Problem**: Need training data from various online sources for deep learning model training.
 
-**Solution**: This prototype uses **Mask-based Motion Analysis**. 
-* Instead of tracking the center of a bounding box, we apply **Optical Flow (Farneback)** or **Background Subtraction** specifically within the instance segmentation mask of the machine.
-* By calculating the mean magnitude of motion vectors within the mask, we can detect articulated movement (arm/bucket) regardless of chassis stationarity. 
-* **Trade-off**: While instance segmentation is more computationally expensive than simple bounding boxes, it is necessary for high-accuracy activity classification in construction.
+**Solution**: The system reads video links from a CSV file and automatically downloads videos using appropriate libraries (pytube for YouTube, requests for direct downloads).
 
-### 2. Activity Classification
-Specific activities (Digging, Swinging, etc.) are classified using a **State Machine + Temporal Windows**.
-* **Digging**: Detected by a combination of arm-region motion and a downward trajectory of the bucket keypoint.
-* **Swinging**: Identified by the horizontal expansion/contraction of the mask or tracking the rotation of the upper carriage relative to the tracks.
-* **Waiting**: Categorized by a lack of significant motion within the mask for a duration exceeding 3 seconds.
+### 2. Deep Learning Model Training
+**Approach**: A CNN-LSTM model is trained on extracted video frames.
+* **Frame Extraction**: Videos are sampled to extract 30 frames each, resized to 64x64.
+* **Model Architecture**: Convolutional layers for spatial features, followed by LSTM for temporal analysis.
+* **Training Data**: Uses "Work Activity" labels from the CSV for supervised learning.
+
+### 3. Activity Classification
+Specific activities are classified using motion-based heuristics in real-time inference.
+* **Digging**: High motion ratio.
+* **Loading**: Moderate motion ratio.
+* **Waiting**: Low motion ratio.
 
 ---
 
@@ -60,7 +64,7 @@ This payload includes:
 - `timestamp`: ISO 8601 formatted timestamp of the analysis.
 - `equipment_id`: Unique identifier for the detected equipment.
 - `state`: Current state ("ACTIVE" or "INACTIVE").
-- `activity`: Classified activity ("Digging", "Swinging/Loading", "Dumping", "Waiting").
+- `activity`: Classified activity ("Digging", "Loading", "Waiting").
 - `confidence`: Confidence score for the classification (0-1).
 - `utilization_percentage`: Overall utilization percentage.
 - `total_active_time`: Cumulative active time in seconds.
@@ -72,7 +76,6 @@ This payload includes:
 
 ### Prerequisites
 * Docker & Docker Compose
-* NVIDIA GPU (Optional, for faster inference)
 * Python 3.9+ (For local development)
 
 ### Quick Start (Docker)
@@ -82,22 +85,28 @@ To spin up the entire pipeline (Kafka, Database, CV Service, and UI):
 docker-compose up --build
 ```
 This will start all services and the Streamlit dashboard will be accessible at `http://localhost:8501`.
+
 ### Local Development
 1. **CV Inference Service**:
    * Navigate to the `cv_service` directory.
    * Install dependencies: `pip install -r requirements.txt`
    * Run the service: `python cv_service.py`
-   * If `./videos/construction_video.mp4` is not available, the service automatically falls back to a synthetic sample feed.
-2. **Streamlit Dashboard**:
+   * The service reads from `videos/video_links.csv` and downloads the first video for inference.
+2. **Training the Deep Learning Model**:
+   * In the `cv_service` directory, run: `python train.py`
+   * This downloads all videos from the CSV, extracts frames, and trains the model.
+   * The trained model is saved to `data/activity_model.h5`.
+3. **Streamlit Dashboard**:
     * Navigate to the `ui` directory.
     * Install dependencies: `pip install -r requirements.txt`
     * Run the dashboard: `streamlit run ui.py`
-3. **Kafka & Database**:
+4. **Kafka & Database**:
     * Use Docker Compose to start Kafka and PostgreSQL: `docker-compose up kafka db`
+
 ---
 ## 📊 Metrics & Evaluation
 * **Utilization Rate**: Percentage of time the machine is classified as "Active" over a given period.
-* **Activity Breakdown**: Time spent in each activity (Digging, Swinging, etc.).
+* **Activity Breakdown**: Time spent in each activity (Digging, Loading, Waiting).
 * **Accuracy**: Evaluated using a labeled dataset of construction footage, comparing predicted states/activities against ground truth annotations.
 * **Latency**: Time taken from frame capture to activity classification, aiming for sub-second performance.
 ---
