@@ -11,6 +11,8 @@ from kafka.errors import KafkaError
 import pandas as pd
 import requests
 from pytube import YouTube
+from tensorflow.keras.models import load_model
+import joblib
 
 VIDEO_SOURCE = os.getenv("VIDEO_SOURCE", "/app/data/construction_video.mp4")
 KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
@@ -40,6 +42,18 @@ if os.path.exists(video_links_file):
 
 ACTIVE_THRESHOLD = 0.005
 HIGH_ACTIVITY_THRESHOLD = 0.04
+
+# Load trained model if available
+model_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'activity_model.h5')
+label_encoder_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'label_encoder.npy')
+if os.path.exists(model_path) and os.path.exists(label_encoder_path):
+    model = load_model(model_path)
+    label_encoder = np.load(label_encoder_path)
+    use_dl_model = True
+    print("Loaded trained deep learning model for activity classification.")
+else:
+    use_dl_model = False
+    print("No trained model found, using motion-based classification.")
 
 
 def create_producer():
